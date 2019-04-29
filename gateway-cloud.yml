@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: gateway-cloud
+  port: 9080
+  cloud:
+    gateway:
+      routes:
+      - id: book-service
+        uri: lb://book-service
+        predicates:
+          - Header=X-Request-Id, \d+
+          - Method=GET
+          - Path=/book-service/**
+          - Query=articleId, \w
+        filters:
+          - AddRequestHeader=X-SomeHeader, bael
+          - AddRequestParameter=foo, bar
+          - AddResponseHeader=X-SomeHeader, Bar
+          - Hystrix=someCommand
+
+eureka:
+  client:
+    region: default
+    registryFetchIntervalSeconds: 5
+ 
+zuul:
+  ignoredServices:
+  ribbonIsolationStrategy:
+  routes:
+    serviceId: book-service
+    path: /book-service/**
+    sensitive-headers: Set-Cookie,Authorization
+
+hystrix:
+  command:  
+    book-service:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 600000
+
+book-service:
+  ribbon: 
+    NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
+    listOfServers: https://example1.com,http://example2.com
+    ConnectTimeout: 1000
+    ReadTimeout: 3000
+    MaxTotalHttpConnections: 500
+    MaxConnectionsPerHost: 100
